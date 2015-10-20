@@ -3,9 +3,28 @@ package ycode
 import (
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"fmt"
+	"vals"
 )
 
 func TestEmbeddedYamlCode(t *testing.T) {
+
+	Convey("Traversing source should create new instance of source", t, func() {
+		m := map[string]string{
+			"a": "x",
+			"b": "y",
+			"c": "z",
+		}
+		v := vals.New(m)
+		src := NewSource(v)
+
+		fmt.Printf("a: '%s' '%s'\n", src.At("a").AsString(), v.At("a").AsString())
+
+		So(src.At("a").AsString(), ShouldEqual, "x")
+		So(src.At("b").AsString(), ShouldEqual, "y")
+		So(src.At("c").AsString(), ShouldEqual, "z")
+		So(src.At("c"), ShouldNotEqual, src)
+	})
 
 	Convey("Should pascal case the values as shown", t, func() {
 		m := map[string]string{

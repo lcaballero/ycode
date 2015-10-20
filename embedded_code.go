@@ -17,14 +17,21 @@ type Source struct {
 	val *vals.Value
 }
 
+// A lookup of Sql instances by their name.
+type CodeLookup map[string]*Sql
+
 // Pairs up a human name with the sql code.  The name can be space or '_' separated.
 type Sql struct {
 	Name string
 	Sql string
+	Vars []string
 }
 
-// A lookup of Sql instances by their name.
-type CodeLookup map[string]*Sql
+func NewSource(src *vals.Value) *Source {
+	return &Source{
+		val: src,
+	}
+}
 
 func (code CodeLookup) LoadSqlFields(scriptStruct interface{}) {
 	v := reflect.ValueOf(scriptStruct).Elem()
@@ -85,9 +92,13 @@ func (val *Source) YamlToSqlScripts() CodeLookup {
 	scripts := make(map[string]*Sql, n)
 	for i := 0; i < n; i++ {
 		v := val.In(i)
+		name := v.At("name").AsString()
+		sql := v.At("sql").AsString()
+		vars := v.At("vars").AsStringSlice()
 		s := &Sql{
-			Name: v.At("name").AsString(),
-			Sql: v.At("sql").AsString(),
+			Name: name,
+			Sql: sql,
+			Vars: vars,
 		}
 		scripts[s.PascalName()] = s
 	}
@@ -109,15 +120,12 @@ func LoadYaml(file string) *Source {
 	viper.ReadConfig(bytes.NewBuffer(y))
 	conf := viper.AllSettings()
 
-	return &Source{
-		val: vals.New(conf),
-	}
+	return NewSource(vals.New(conf))
 }
 
 // Delegates to underlying value but return the Source.
 func (s *Source) At(key string) *Source {
-	s.val = s.val.At(key)
-	return s
+	return NewSource(s.val.At(key))
 }
 
 // Delegates to underlying value but return the Source.
@@ -125,10 +133,14 @@ func (s *Source) AsString() string {
 	return s.val.AsString()
 }
 
+
+func (s *Source) AsStringSlice() []string {
+	return s.val.AsStringSlice()
+}
+
 // Delegates to underlying value but return the Source.
 func (s *Source) In(n int) *Source {
-	s.val = s.val.In(n)
-	return s
+	return NewSource(s.val.In(n))
 }
 
 // Delegates to underlying value but return the Source.
